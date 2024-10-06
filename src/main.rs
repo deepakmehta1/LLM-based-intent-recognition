@@ -1,13 +1,19 @@
 mod cli;
 mod handlers;
+use dotenv::dotenv;
 
-fn main() {
-    println!("Enter exit to end");
+#[tokio::main]
+async fn main() {
+    dotenv().ok();  // Load environment variables from .env file
+
+    println!("Enter 'exit' to end");
     loop {
         let input = cli::get_input();
         if input == "exit" {
-            break
+            break;
         }
-        handlers::print_input(&input);
+        if let Err(e) = handlers::print_response(&input).await {
+            eprintln!("Error: {:?}", e);
+        }
     }
 }
