@@ -2,6 +2,12 @@ mod cli;
 mod handlers;
 
 fn main() {
-    let input = cli::get_input();
-    handlers::print_input(&input);
+    println!("Enter exit to end");
+    loop {
+        let input = cli::get_input();
+        if input == "exit" {
+            break
+        }
+        handlers::print_input(&input);
+    }
 }
