@@ -1,0 +1,29 @@
+[
+    {
+      "name": "informative",
+      "description": "Triggered when the user asks for specific information or facts.",
+      "examples": [
+        "What is the capital of France?",
+        "Can you tell me about the solar system?",
+        "How does photosynthesis work?"
+      ]
+    },
+    {
+      "name": "empathetic",
+      "description": "Triggered when the user shares personal feelings, concerns, or experiences.",
+      "examples": [
+        "I've had a tough day today.",
+        "I'm feeling really stressed out about work.",
+        "I need someone to talk to about my problems."
+      ]
+    },
+    {
+      "name": "task_oriented",
+      "description": "Triggered when the user wants to accomplish a specific task.",
+      "examples": [
+        "Can you set a reminder for my meeting at 2 PM?",
+        "Help me book a table at an Italian restaurant.",
+        "Find me a good laptop under $1000."
+      ]
+    }
+  ]
