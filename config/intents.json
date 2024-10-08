@@ -25,5 +25,15 @@
         "Help me book a table at an Italian restaurant.",
         "Find me a good laptop under $1000."
       ]
-    }
+    },
+    {
+        "name": "others",
+        "description": "Triggered when the intent is not among informative, empathetic or task_oriented.",
+        "examples": [
+          "Hello, how are you?",
+          "Goodbye",
+          "Good Morning"
+        ]
+      }
   ]
+  
