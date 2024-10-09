@@ -22,4 +22,3 @@ This project demonstrates an application of large language models (LLM) for inte
 4. **Modularity**
     - The application is structured in a modular way to allow easy addition of new intents and functionalities.
 
-## Directory Structure
