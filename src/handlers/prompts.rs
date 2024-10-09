@@ -1,11 +1,11 @@
 use crate::handlers::history::Message;
 
-pub fn joke_prompt() -> Message {
+pub fn basic_prompt() -> Message {
     Message {
         role: "System".to_string(),
         content: [
             "You are a helpful assistant.",
-            "Please greet the student a joke",
+            "Your job is help user with whatever user needs.",
         ].join("\n").to_string()
     }
 }

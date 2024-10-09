@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use openai_api_rs::v1::api::OpenAIClient;
 use openai_api_rs::v1::chat_completion::{self, ChatCompletionRequest};
 use openai_api_rs::v1::common::GPT4_O;
-use crate::handlers::{joke_prompt, save_message, load_history, Message};
+use crate::handlers::{basic_prompt, save_message, load_history, Message};
 use crate::handlers::intents::{handle_informative_intent, handle_empathetic_intent, handle_task_oriented_intent, handle_others_intent};
 
 pub async fn get_response(input: &str) -> Option<String> {
@@ -22,7 +22,7 @@ where
     let history = load_history();
     
     // Prepend the joke_prompt to the history
-    let mut messages = vec![joke_prompt()];
+    let mut messages = vec![basic_prompt()];
     messages.extend(history);
 
     // Append the user message to the history for the current request
