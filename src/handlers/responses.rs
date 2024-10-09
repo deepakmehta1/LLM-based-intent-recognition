@@ -6,7 +6,7 @@ use openai_api_rs::v1::chat_completion::{self, ChatCompletionRequest, ToolType, 
 use openai_api_rs::v1::common::GPT4_O;
 use crate::handlers::{save_message, load_history, Message};
 use crate::handlers::prompts::basic_prompt;
-use crate::handlers::intents::{handle_informative_intent, handle_empathetic_intent};
+use crate::handlers::intents::{handle_informative_intent, handle_empathetic_intent, handle_task_oriented_intent, handle_others_intent};
 
 pub async fn get_response(input: &str) -> Option<String> {
     get_response_impl(input, OpenAIClient::new).await
@@ -96,7 +96,8 @@ where
                 let response_message = match intent.intent.as_str() {
                     "informative" => handle_informative_intent(input),
                     "empathetic" => handle_empathetic_intent(input),
-                    _ => basic_prompt(),
+                    "task_oriented" => handle_task_oriented_intent(input),
+                    _ => handle_others_intent(input),
                 };
 
                 // Update the first message with the specific intent prompt
