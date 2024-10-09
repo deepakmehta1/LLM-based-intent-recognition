@@ -1,17 +1,25 @@
 [package]
-name = "LLM-based-intent-recognition"
+name = "llm_based_intent_recognition"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 clap = { version = "3.0", features = ["derive"] }
+diesel = { version = "2.2", features = ["postgres", "uuid", "chrono"] } 
 dotenv = "0.15.0"
 tokio = { version = "1", features = ["full"] }
 openai-api-rs = "5.0.10"
 lazy_static = "1.4.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+chrono = "0.4"
 
 [dev-dependencies]
 assert_cmd = "2.0"
 predicates = "2.1"
+
+[dependencies.async-std]
+version = "1.10.0"
+
+[dependencies.tokio-postgres]
+version = "0.7"

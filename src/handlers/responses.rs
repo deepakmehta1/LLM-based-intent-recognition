@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use openai_api_rs::v1::api::OpenAIClient;
 use openai_api_rs::v1::chat_completion::{self, ChatCompletionRequest, ToolType, Tool, Function, FunctionParameters, JSONSchemaDefine, JSONSchemaType, ToolChoiceType, ChatCompletionMessage, MessageRole, Content};
 use openai_api_rs::v1::common::GPT4_O;
-use crate::handlers::{save_message, load_history, Message};
+use crate::handlers::history::{save_message, load_history, Message}; // Adjusted to import your Message struct
 use crate::handlers::prompts::basic_prompt;
 use crate::handlers::intents::{handle_informative_intent, handle_empathetic_intent, handle_task_oriented_intent, handle_others_intent};
 
@@ -19,21 +19,22 @@ where
     let openai_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set");
     let client = client_factory(openai_key);
 
-    // Collect history and convert it to a suitable format for OpenAI request
+    // Collect the message history from the database
     let history = load_history();
 
     // Start with the basic prompt in message format
-    let mut messages: Vec<Message> = vec![basic_prompt()];
-    messages.extend(history);
+    let mut messages: Vec<Message> = history;
+    messages.insert(0, basic_prompt()); // Add the basic prompt at the start
 
     // Add the user's input to history
-    messages.push(Message {
+    let user_message = Message {
         role: "user".to_string(),
         content: input.to_string(),
-    });
-    save_message("user", input);
+    };
+    messages.push(user_message.clone()); // Clone for use in save_message
+    save_message("user", &user_message.content);
 
-    // Convert Message to ChatCompletionMessage
+    // Convert `Message` to `ChatCompletionMessage`
     let chat_messages: Vec<ChatCompletionMessage> = messages.iter().map(|msg| {
         ChatCompletionMessage {
             role: match msg.role.as_str() {
@@ -82,61 +83,58 @@ where
 
     let result = client.chat_completion(req).await.ok()?;
 
-    match result.choices[0].finish_reason {
-        Some(chat_completion::FinishReason::tool_calls) => {
-            #[derive(Deserialize, Serialize)]
-            struct Intent { intent: String }
+    if let Some(finish_reason) = &result.choices[0].finish_reason {
+        match finish_reason {
+            chat_completion::FinishReason::tool_calls => {
+                #[derive(Deserialize, Serialize)]
+                struct Intent { intent: String }
 
-            let tool_calls = result.choices[0].message.tool_calls.as_ref().unwrap();
-            for tool_call in tool_calls {
-                let arguments = tool_call.function.arguments.clone().unwrap();
-                let intent: Intent = serde_json::from_str(&arguments).ok()?;
+                let tool_calls = result.choices[0].message.tool_calls.as_ref().unwrap();
+                for tool_call in tool_calls {
+                    let arguments = tool_call.function.arguments.clone().unwrap();
+                    let intent: Intent = serde_json::from_str(&arguments).ok()?;
 
-                // Generate response based on the intent
-                let response_message = match intent.intent.as_str() {
-                    "informative" => handle_informative_intent(input),
-                    "empathetic" => handle_empathetic_intent(input),
-                    "task_oriented" => handle_task_oriented_intent(input),
-                    _ => handle_others_intent(input),
-                };
+                    // Generate response based on the intent
+                    let response_message = match intent.intent.as_str() {
+                        "informative" => handle_informative_intent(input),
+                        "empathetic" => handle_empathetic_intent(input),
+                        "task_oriented" => handle_task_oriented_intent(input),
+                        _ => handle_others_intent(input),
+                    };
 
-                // // If the intent is "others", immediately return the response
-                // if intent.intent.as_str() == "others" {
-                //     save_message("assistant", &response_message.content);
-                //     return Some(response_message.content);
-                // }
+                    // Update the first message with the specific intent prompt
+                    messages[0] = response_message;
 
-                // Update the first message with the specific intent prompt
-                messages[0] = response_message;
+                    // Convert updated Messages to ChatCompletionMessages
+                    let updated_chat_messages: Vec<ChatCompletionMessage> = messages.iter().map(|msg| {
+                        ChatCompletionMessage {
+                            role: match msg.role.as_str() {
+                                "user" => MessageRole::user,
+                                "assistant" => MessageRole::assistant,
+                                "system" => MessageRole::system,
+                                _ => MessageRole::user,
+                            },
+                            content: Content::Text(msg.content.clone()),
+                            name: None,
+                            tool_calls: None,
+                            tool_call_id: None,
+                        }
+                    }).collect();
 
-                // Convert updated Messages to ChatCompletionMessages
-                let updated_chat_messages: Vec<ChatCompletionMessage> = messages.iter().map(|msg| {
-                    ChatCompletionMessage {
-                        role: match msg.role.as_str() {
-                            "user" => MessageRole::user,
-                            "assistant" => MessageRole::assistant,
-                            "system" => MessageRole::system,
-                            _ => MessageRole::user,
-                        },
-                        content: Content::Text(msg.content.clone()),
-                        name: None,
-                        tool_calls: None,
-                        tool_call_id: None,
+                    // Create a new request with updated messages
+                    let req = ChatCompletionRequest::new(GPT4_O.to_string(), updated_chat_messages);
+
+                    let result = client.chat_completion(req).await.ok()?;
+                    if let Some(response_content) = result.choices[0].message.content.clone() {
+                        save_message("assistant", &response_content);
+                        return Some(response_content);
                     }
-                }).collect();
-
-                // Create a new request with updated messages
-                let req = ChatCompletionRequest::new(GPT4_O.to_string(), updated_chat_messages);
-
-                let result = client.chat_completion(req).await.ok()?;
-                if let Some(response_content) = result.choices[0].message.content.clone() {
-                    save_message("assistant", &response_content);
-                    return Some(response_content);
                 }
-            }
+            },
+            _ => {}
         }
-        _ => {}
     }
+
     if let Some(response_content) = result.choices[0].message.content.clone() {
         save_message("assistant", &response_content);
         return Some(response_content);
