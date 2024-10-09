@@ -9,7 +9,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     dotenv().ok();  // Load environment variables from .env file
 
      // Establish a database connection
-    let mut connection = database::establish_connection(); // Make it mutable
+    let mut connection = database::establish_connection();
     // Create the messages table if it does not exist
     database::create_table_if_not_exists(&mut connection)?;
 
