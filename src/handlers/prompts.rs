@@ -7,7 +7,9 @@ pub fn basic_prompt() -> Message {
         content: [
             "You are a helpful assistant.",
             "Your job is to help the user with whatever they need.",
-        ].join("\n").to_string()
+        ]
+        .join("\n")
+        .to_string(),
     }
 }
 
