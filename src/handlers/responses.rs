@@ -100,6 +100,12 @@ where
                     _ => handle_others_intent(input),
                 };
 
+                // // If the intent is "others", immediately return the response
+                // if intent.intent.as_str() == "others" {
+                //     save_message("assistant", &response_message.content);
+                //     return Some(response_message.content);
+                // }
+
                 // Update the first message with the specific intent prompt
                 messages[0] = response_message;
 
@@ -131,6 +137,9 @@ where
         }
         _ => {}
     }
-
+    if let Some(response_content) = result.choices[0].message.content.clone() {
+        save_message("assistant", &response_content);
+        return Some(response_content);
+    }
     None
 }
