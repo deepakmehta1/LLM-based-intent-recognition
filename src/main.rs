@@ -1,11 +1,17 @@
 mod cli;
 mod handlers;
+mod database;
 use dotenv::dotenv;
 use std::error::Error;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     dotenv().ok();  // Load environment variables from .env file
+
+     // Establish a database connection
+    let mut connection = database::db::establish_connection(); // Make it mutable
+    // Create the messages table if it does not exist
+    database::db::create_table_if_not_exists(&mut connection)?;
 
     println!("Enter 'exit' to end");
     loop {
