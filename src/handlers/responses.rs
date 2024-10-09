@@ -1,12 +1,18 @@
-use std::env;
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
-use openai_api_rs::v1::api::OpenAIClient;
-use openai_api_rs::v1::chat_completion::{self, ChatCompletionRequest, ToolType, Tool, Function, FunctionParameters, JSONSchemaDefine, JSONSchemaType, ToolChoiceType, ChatCompletionMessage, MessageRole, Content};
-use openai_api_rs::v1::common::GPT4_O;
-use crate::handlers::history::{save_message, load_history, Message}; // Adjusted to import your Message struct
+use crate::handlers::history::{load_history, save_message, Message}; // Adjusted to import your Message struct
+use crate::handlers::intents::{
+    handle_empathetic_intent, handle_informative_intent, handle_others_intent,
+    handle_task_oriented_intent,
+};
 use crate::handlers::prompts::basic_prompt;
-use crate::handlers::intents::{handle_informative_intent, handle_empathetic_intent, handle_task_oriented_intent, handle_others_intent};
+use openai_api_rs::v1::api::OpenAIClient;
+use openai_api_rs::v1::chat_completion::{
+    self, ChatCompletionMessage, ChatCompletionRequest, Content, Function, FunctionParameters,
+    JSONSchemaDefine, JSONSchemaType, MessageRole, Tool, ToolChoiceType, ToolType,
+};
+use openai_api_rs::v1::common::GPT4_O;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::env;
 
 pub async fn get_response(input: &str) -> Option<String> {
     get_response_impl(input, OpenAIClient::new).await
@@ -35,20 +41,23 @@ where
     save_message("user", &user_message.content);
 
     // Convert `Message` to `ChatCompletionMessage`
-    let chat_messages: Vec<ChatCompletionMessage> = messages.iter().map(|msg| {
-        ChatCompletionMessage {
-            role: match msg.role.as_str() {
-                "user" => MessageRole::user,
-                "assistant" => MessageRole::assistant,
-                "system" => MessageRole::system,
-                _ => MessageRole::user,  // Default to user if role is unrecognized
-            },
-            content: Content::Text(msg.content.clone()),
-            name: None,
-            tool_calls: None,
-            tool_call_id: None,
-        }
-    }).collect();
+    let chat_messages: Vec<ChatCompletionMessage> = messages
+        .iter()
+        .map(|msg| {
+            ChatCompletionMessage {
+                role: match msg.role.as_str() {
+                    "user" => MessageRole::user,
+                    "assistant" => MessageRole::assistant,
+                    "system" => MessageRole::system,
+                    _ => MessageRole::user, // Default to user if role is unrecognized
+                },
+                content: Content::Text(msg.content.clone()),
+                name: None,
+                tool_calls: None,
+                tool_call_id: None,
+            }
+        })
+        .collect();
 
     let mut properties = HashMap::new();
     properties.insert(
@@ -87,7 +96,9 @@ where
         match finish_reason {
             chat_completion::FinishReason::tool_calls => {
                 #[derive(Deserialize, Serialize)]
-                struct Intent { intent: String }
+                struct Intent {
+                    intent: String,
+                }
 
                 let tool_calls = result.choices[0].message.tool_calls.as_ref().unwrap();
                 for tool_call in tool_calls {
@@ -106,8 +117,9 @@ where
                     messages[0] = response_message;
 
                     // Convert updated Messages to ChatCompletionMessages
-                    let updated_chat_messages: Vec<ChatCompletionMessage> = messages.iter().map(|msg| {
-                        ChatCompletionMessage {
+                    let updated_chat_messages: Vec<ChatCompletionMessage> = messages
+                        .iter()
+                        .map(|msg| ChatCompletionMessage {
                             role: match msg.role.as_str() {
                                 "user" => MessageRole::user,
                                 "assistant" => MessageRole::assistant,
@@ -118,8 +130,8 @@ where
                             name: None,
                             tool_calls: None,
                             tool_call_id: None,
-                        }
-                    }).collect();
+                        })
+                        .collect();
 
                     // Create a new request with updated messages
                     let req = ChatCompletionRequest::new(GPT4_O.to_string(), updated_chat_messages);
@@ -130,7 +142,7 @@ where
                         return Some(response_content);
                     }
                 }
-            },
+            }
             _ => {}
         }
     }

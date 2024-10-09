@@ -1,12 +1,11 @@
-use crate::handlers::prompts::empathetic_prompt;
 use crate::handlers::history::Message;
+use crate::handlers::prompts::empathetic_prompt;
 
 pub fn handle_empathetic_intent(query: &str) -> Message {
     println!("Empathetic intent called");
     let prompt = empathetic_prompt();
-    // Logic to include the user's query if needed.
     Message {
         role: prompt.role,
-        content: format!("{}\n\nUser Query: {}", prompt.content, query)
+        content: format!("{}\n\nUser Query: {}", prompt.content, query),
     }
 }
