@@ -1,5 +1,5 @@
-use crate::database::establish_connection;
 use crate::database::schema::messages;
+use crate::database::db::{DbPool, get_connection};
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use diesel::{Insertable, Queryable};
@@ -31,25 +31,25 @@ pub struct NewDbMessage {
 }
 
 // Save a message
-pub fn save_message(role: &str, content: &str) {
+pub fn save_message(pool: &DbPool, role: &str, content: &str) {
     let new_message = NewDbMessage {
         role: role.to_string(),
         content: content.to_string(),
         created_at: chrono::Local::now().naive_utc(), // Adjust timezone as necessary
     };
 
-    let mut connection = establish_connection();
+    let mut conn = get_connection(pool); // Get a connection from the pool
     diesel::insert_into(messages::table)
         .values(&new_message)
-        .execute(&mut connection)
+        .execute(&mut conn)
         .expect("Error saving new message");
 }
 
 // Load history from the database
-pub fn load_history() -> Vec<Message> {
-    let mut connection = establish_connection();
+pub fn load_history(pool: &DbPool) -> Vec<Message> {
+    let mut conn = get_connection(pool); // Get a connection from the pool
     let db_messages: Vec<DbMessage> = messages::table
-        .load(&mut connection)
+        .load::<DbMessage>(&mut conn)
         .expect("Error loading messages");
 
     db_messages
